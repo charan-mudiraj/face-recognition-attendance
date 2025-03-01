@@ -234,11 +234,9 @@ const Camera: React.FC = () => {
         <p className="font-medium text-xl">
           Matched Roll Number:{" "}
           {bestMatch ? (
-            <span className="text-blue-500">{bestMatch}</span>
+            <span className="text-white">{bestMatch}</span>
           ) : (
-            <span className="text-blue-500 italic animate-pulse">
-              Loading...
-            </span>
+            <span className="text-white italic animate-pulse">Loading...</span>
           )}
         </p>
       </div>
@@ -251,12 +249,14 @@ const Camera: React.FC = () => {
             onClick={onCapture}
             disabled={!Boolean(bestMatch)}
             className="mt-4 text-white h-full w-full rounded-full hover:bg-blue-600 absolute disabled:opacity-[0.3]"
+            name="capture btn"
           >
             <img
               src="shutter-camera.png"
               style={{
                 filter: "invert(1.3)",
               }}
+              alt="shutter camera"
             />
           </button>
         )}
