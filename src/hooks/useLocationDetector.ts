@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { point, polygon, booleanPointInPolygon } from "@turf/turf";
+import { Position } from "geojson";
 
 interface Location {
   latitude: number;
@@ -16,18 +17,42 @@ const roomBounds = polygon([
     [78.4336066549015, 17.329206057872582],
   ],
 ]);
+
+const getPolygonBounds = () => {
+  const bounds = window.localStorage.getItem("polygon-bounds");
+
+  if (bounds) {
+    return JSON.parse(bounds) as Position[][];
+  }
+  return [
+    [
+      [0, 0],
+      [0, 0],
+      [0, 0],
+      [0, 0],
+      [0, 0],
+    ],
+  ];
+};
+
 const useLocationDetector = () => {
   const [location, setLocation] = useState<Location>({
     latitude: 0,
     longitude: 0,
     accuracy: 1000,
   });
+  const polygonBoundsRef = useRef<Position[][]>(getPolygonBounds());
+
+  const storePolygonBounds = (coordinates: Position[][]) => {
+    window.localStorage.setItem("polygon-bounds", JSON.stringify(coordinates));
+    polygonBoundsRef.current = coordinates;
+  };
 
   const isInLocation = useMemo(
     () =>
       booleanPointInPolygon(
         point([location.longitude, location.latitude]),
-        roomBounds
+        polygon(getPolygonBounds())
       ),
     [location]
   );
@@ -59,6 +84,8 @@ const useLocationDetector = () => {
   return {
     isInLocation,
     location,
+    storePolygonBounds,
+    polygonBounds: polygonBoundsRef.current,
   };
 };
 

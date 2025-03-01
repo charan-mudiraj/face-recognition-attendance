@@ -138,8 +138,8 @@ const Camera: React.FC = () => {
   };
 
   const onCapture = async () => {
-    setLoading(true);
     if (!bestMatch) return;
+    setLoading(true);
     try {
       const rollNo = bestMatch.toString().padStart(2, "0");
       const todayDate = new Date().toISOString().split("T")[0];
@@ -225,7 +225,7 @@ const Camera: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center p-4 h-full justify-around">
+    <div className="flex flex-col items-center h-full justify-around">
       <div className="relative w-full h-[70%] flex justify-center rounded-2xl">
         <video
           ref={videoRef}
@@ -254,11 +254,11 @@ const Camera: React.FC = () => {
         {loading ? (
           <LoaderCircle className="animate-spin h-full w-full absolute" />
         ) : (
-          <button
+          <div
             onClick={onCapture}
-            disabled={!Boolean(bestMatch)}
-            className="mt-4 text-white h-full w-full rounded-full hover:bg-blue-600 absolute disabled:opacity-[0.3]"
-            name="capture btn"
+            className={`mt-4 text-white h-full w-full rounded-full hover:bg-blue-600 absolute ${
+              !Boolean(bestMatch) ? "opacity-[0.3]" : ""
+            }`}
           >
             <img
               src="shutter-camera.png"
@@ -267,7 +267,7 @@ const Camera: React.FC = () => {
               }}
               alt="shutter camera"
             />
-          </button>
+          </div>
         )}
       </div>
     </div>

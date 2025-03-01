@@ -7,3 +7,20 @@
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
 }
+input[data-pc-name="inputtext"] {
+  height: 35px;
+}
+/* button {
+  font-weight: 600;
+  letter-spacing: 2px;
+  font-size: large;
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 2px solid white;
+}
+
+button:active {
+  background-color: white;
+  color: #242424;
+} */
