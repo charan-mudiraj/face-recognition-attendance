@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 interface Location {
   latitude: number;
   longitude: number;
+  accuracy: number;
 }
 // Given coordinates (square boundary)
 const squareBounds = {
@@ -16,6 +17,7 @@ const useLocationDetector = () => {
   const [location, setLocation] = useState<Location>({
     latitude: 0,
     longitude: 0,
+    accuracy: 1000,
   });
 
   const isInLocation =
@@ -24,30 +26,33 @@ const useLocationDetector = () => {
     location.longitude >= squareBounds.lonMin &&
     location.longitude <= squareBounds.lonMax;
 
-  const getLocation = () => {
-    navigator.geolocation.getCurrentPosition(
+  useEffect(() => {
+    if (!("geolocation" in navigator)) {
+      console.error("Geolocation is not supported");
+      return;
+    }
+
+    // Watch position for continuous updates
+    const watchId = navigator.geolocation.watchPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
-        setLocation({ latitude, longitude });
+        const { latitude, longitude, accuracy } = position.coords;
+
+        // Accept only high-accuracy readings (e.g., < 10 meters)
+
+        setLocation({ latitude, longitude, accuracy });
       },
       (error) => {
         console.error("Error getting location:", error);
-      }
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
     );
-  };
 
-  useEffect(() => {
-    if ("geolocation" in navigator) {
-      getLocation();
-    } else {
-      console.error("Geolocation is not supported");
-    }
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   return {
     isInLocation,
     location,
-    getLocation,
   };
 };
 
