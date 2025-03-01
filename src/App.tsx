@@ -1,5 +1,4 @@
-// import useLocationChecker from "./hooks/useLocationChecker";
-import Camera from "./pages/Camera";
+import LocationDetector from "./pages/LocationDetector";
 
 // const uploadStudentsDetails = async () => {
 //   const details = structuredClone(detailsJSON);
@@ -14,13 +13,12 @@ import Camera from "./pages/Camera";
 // };
 
 export default function App() {
-  // const { location } = useLocationChecker();
+  // const { location } = useLocationDetector();
 
   return (
     <div className="h-[100vh]">
-      <Camera />
-      {/* <p className="">Latitude: {location.latitude}</p>
-      <p>Longitude: {location.longitude}</p> */}
+      {/* <Camera /> */}
+      <LocationDetector />
     </div>
   );
 }

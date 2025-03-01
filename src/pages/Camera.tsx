@@ -6,9 +6,10 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { DB } from "../firebase";
 import { StudentDetail } from "../types";
 
+const MODEL_URL = "/models";
+
 const loadModels = async () => {
   try {
-    const MODEL_URL = "/models";
     await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
     await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
     await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
@@ -47,6 +48,7 @@ const Camera: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const matchedDescriptorRef = useRef<Float32Array>(null);
+  const lastDescriptorRef = useRef<Float32Array | null>(null);
 
   const startVideo = async () => {
     try {
@@ -64,17 +66,16 @@ const Camera: React.FC = () => {
   };
 
   const detectFace = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    if (!video || !canvas) return;
 
+    const ctx = canvas.getContext("2d");
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    const detect = async () => {
-      if (!video || !canvas || !ctx) return;
+    const processDetection = async () => {
+      if (!ctx) return;
 
       const detections = await faceapi.detectSingleFace(
         video,
@@ -89,16 +90,17 @@ const Camera: React.FC = () => {
         ctx.lineWidth = 4;
         ctx.strokeRect(x, y, width, height);
 
-        // Draw text below the face box
         ctx.font = "18px Arial";
-        ctx.fillStyle = "#00FF00"; // Green color
+        ctx.fillStyle = "#00FF00";
         ctx.fillText("Face Detected", x, y + height + 20);
+
+        getBestMatch(); // Call best match asynchronously
       }
-      getBestMatch();
-      requestAnimationFrame(detect);
+
+      setTimeout(processDetection, 500); // Reduce unnecessary CPU load
     };
 
-    detect(); // Start detecting
+    processDetection();
   };
 
   const capturePhoto = () => {
@@ -123,6 +125,13 @@ const Camera: React.FC = () => {
       const descriptor = await getFaceDescriptor(imgUrl);
       matchedDescriptorRef.current = descriptor;
       if (descriptor) {
+        if (
+          lastDescriptorRef.current &&
+          faceapi.euclideanDistance(lastDescriptorRef.current, descriptor) < 0.1
+        ) {
+          return;
+        }
+        lastDescriptorRef.current = descriptor;
         findBestMatch(descriptor);
       }
     }
