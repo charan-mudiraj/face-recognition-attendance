@@ -1,41 +1,21 @@
 import { useState, useEffect, useMemo } from "react";
+import { point, polygon, booleanPointInPolygon } from "@turf/turf";
 
 interface Location {
   latitude: number;
   longitude: number;
   accuracy: number;
 }
-const isPointInsidePolygon = (
-  point: { lat: number; lon: number },
-  polygon: { lat: number; lon: number }[]
-) => {
-  let inside = false;
-  const x = point.lon,
-    y = point.lat;
-  const epsilon = 1e-9; // Small threshold to handle floating-point precision
 
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i].lon,
-      yi = polygon[i].lat;
-    const xj = polygon[j].lon,
-      yj = polygon[j].lat;
-
-    const intersect =
-      Math.abs(yi - y) > epsilon !== Math.abs(yj - y) > epsilon &&
-      x < ((xj - xi) * (y - yi)) / (yj - yi + epsilon) + xi;
-
-    if (intersect) inside = !inside;
-  }
-
-  return inside;
-};
-
-const roomBounds = [
-  { lat: 17.3294284, lon: 78.4338452 }, // Corner 1
-  { lat: 17.3293436, lon: 78.43337994 }, // Corner 2
-  { lat: 17.3292061, lon: 78.4337027 }, // Corner 3
-  { lat: 17.3291804, lon: 78.4337387 }, // Corner 4
-];
+const roomBounds = polygon([
+  [
+    [78.4336066549015, 17.329206057872582],
+    [78.43370649006863, 17.32916920013814],
+    [78.43367670499202, 17.329090745795142],
+    [78.43357742139841, 17.329129183162024],
+    [78.4336066549015, 17.329206057872582],
+  ],
+]);
 const useLocationDetector = () => {
   const [location, setLocation] = useState<Location>({
     latitude: 0,
@@ -45,8 +25,8 @@ const useLocationDetector = () => {
 
   const isInLocation = useMemo(
     () =>
-      isPointInsidePolygon(
-        { lat: location.latitude, lon: location.longitude },
+      booleanPointInPolygon(
+        point([location.longitude, location.latitude]),
         roomBounds
       ),
     [location]

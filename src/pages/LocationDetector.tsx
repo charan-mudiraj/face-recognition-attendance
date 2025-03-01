@@ -4,7 +4,7 @@ export default function LocationDetector() {
   const { isInLocation, location } = useLocationDetector();
   return (
     <div>
-      <p>Is In Location : {isInLocation ? "Yes" : "No"}</p>
+      <p>Is Inside : {isInLocation ? "Yes" : "No"}</p>
       <p>latitude: {location.latitude}</p>
       <p>longitude: {location.longitude}</p>
       <p>accuracy: {location.accuracy}</p>
