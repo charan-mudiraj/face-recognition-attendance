@@ -1,18 +1,41 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 interface Location {
   latitude: number;
   longitude: number;
   accuracy: number;
 }
-// Given coordinates (square boundary)
-const squareBounds = {
-  latMin: 12.95, // Bottom-left latitude
-  latMax: 12.96, // Top-right latitude
-  lonMin: 77.59, // Bottom-left longitude
-  lonMax: 77.6, // Top-right longitude
+const isPointInsidePolygon = (
+  point: { lat: number; lon: number },
+  polygon: { lat: number; lon: number }[]
+) => {
+  let inside = false;
+  const x = point.lon,
+    y = point.lat;
+  const epsilon = 1e-9; // Small threshold to handle floating-point precision
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].lon,
+      yi = polygon[i].lat;
+    const xj = polygon[j].lon,
+      yj = polygon[j].lat;
+
+    const intersect =
+      Math.abs(yi - y) > epsilon !== Math.abs(yj - y) > epsilon &&
+      x < ((xj - xi) * (y - yi)) / (yj - yi + epsilon) + xi;
+
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
 };
 
+const roomBounds = [
+  { lat: 17.3294284, lon: 78.4338452 }, // Corner 1
+  { lat: 17.3293436, lon: 78.43337994 }, // Corner 2
+  { lat: 17.3292061, lon: 78.4337027 }, // Corner 3
+  { lat: 17.3291804, lon: 78.4337387 }, // Corner 4
+];
 const useLocationDetector = () => {
   const [location, setLocation] = useState<Location>({
     latitude: 0,
@@ -20,11 +43,14 @@ const useLocationDetector = () => {
     accuracy: 1000,
   });
 
-  const isInLocation =
-    location.latitude >= squareBounds.latMin &&
-    location.latitude <= squareBounds.latMax &&
-    location.longitude >= squareBounds.lonMin &&
-    location.longitude <= squareBounds.lonMax;
+  const isInLocation = useMemo(
+    () =>
+      isPointInsidePolygon(
+        { lat: location.latitude, lon: location.longitude },
+        roomBounds
+      ),
+    [location]
+  );
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
