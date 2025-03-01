@@ -1,6 +1,4 @@
-import { InputText } from "primereact/inputtext";
 import useLocationDetector from "../hooks/useLocationDetector";
-import { FloatLabel } from "primereact/floatlabel";
 import React, { useRef } from "react";
 import { Position } from "geojson";
 import Input from "../components/Input";

@@ -1,6 +1,4 @@
 import { Button } from "primereact/button";
-import { InputText } from "primereact/inputtext";
-import React from "react";
 import { useNavigate } from "react-router";
 
 export default function Home() {

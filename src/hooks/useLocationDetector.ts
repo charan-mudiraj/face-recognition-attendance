@@ -8,16 +8,6 @@ interface Location {
   accuracy: number;
 }
 
-const roomBounds = polygon([
-  [
-    [78.4336066549015, 17.329206057872582],
-    [78.43370649006863, 17.32916920013814],
-    [78.43367670499202, 17.329090745795142],
-    [78.43357742139841, 17.329129183162024],
-    [78.4336066549015, 17.329206057872582],
-  ],
-]);
-
 const getPolygonBounds = () => {
   const bounds = window.localStorage.getItem("polygon-bounds");
 
