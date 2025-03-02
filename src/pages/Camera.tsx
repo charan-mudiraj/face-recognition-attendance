@@ -1,10 +1,13 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, JSX } from "react";
 import * as faceapi from "face-api.js";
 import descriptorsJSON from "../assets/descriptors.json";
-import { LoaderCircle } from "lucide-react";
+import { Check, CircleX, Info, LoaderCircle } from "lucide-react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { DB } from "../firebase";
 import { StudentDetail } from "../types";
+import useLocationDetector from "../hooks/useLocationDetector";
+import { Dialog } from "primereact/dialog";
+import { useNavigate } from "react-router";
 
 const MODEL_URL = "/models";
 
@@ -41,14 +44,23 @@ const loadModels = async () => {
 //   descriptor: Float32Array;
 // }
 
+interface Modal {
+  type: "error" | "info" | "success";
+  header: JSX.Element | string;
+  body: JSX.Element | string;
+}
+
 const Camera: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [bestMatch, setBestMatch] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
+  const lastCapturedImgRef = useRef<string>("");
+  const [modal, setModal] = useState<Modal | null>(null);
   const matchedDescriptorRef = useRef<Float32Array>(null);
   const lastDescriptorRef = useRef<Float32Array | null>(null);
+  const { isInLocation } = useLocationDetector();
+  const navigate = useNavigate();
 
   const startVideo = async () => {
     try {
@@ -122,6 +134,7 @@ const Camera: React.FC = () => {
   const getBestMatch = async () => {
     const imgUrl = capturePhoto();
     if (imgUrl) {
+      lastCapturedImgRef.current = imgUrl;
       const descriptor = await getFaceDescriptor(imgUrl);
       matchedDescriptorRef.current = descriptor;
       if (descriptor) {
@@ -138,6 +151,15 @@ const Camera: React.FC = () => {
   };
 
   const onCapture = async () => {
+    if (isInLocation) {
+      setModal({
+        type: "error",
+        header: "Invalid Location",
+        body: "You are currently not on the destination area. Please try again when you reach at Block-C of your college.",
+      });
+
+      return;
+    }
     if (!bestMatch) return;
     setLoading(true);
     try {
@@ -149,16 +171,54 @@ const Camera: React.FC = () => {
       console.log(details);
       const attDoc = await getDoc(doc(DB, todayDate, docId));
       if (attDoc.exists()) {
-        setError("Attendance Already Uploaded with name " + details.name);
+        setModal({
+          type: "info",
+          header: "Already Uploaded",
+          body: "Attendance Already Uploaded with name" + details.name,
+        });
       } else {
+        const timestamp = new Date();
         await setDoc(doc(DB, todayDate, docId), {
-          timestamp: new Date(),
+          timestamp,
           name: details.name,
           descriptor: Array.from(matchedDescriptorRef.current!),
         });
+
+        setModal({
+          type: "success",
+          header: "Attendance Uploaded",
+          body: (
+            <div className="flex gap-3">
+              <img
+                src={lastCapturedImgRef.current}
+                className="h-18 w-18 rounded-full"
+              />
+              <div>
+                <p>{details.name}</p>
+                <p>{details.ht_no}</p>
+                <p>
+                  {timestamp
+                    .toLocaleString("en-GB", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })
+                    .replace(",", "")}
+                </p>
+              </div>
+            </div>
+          ),
+        });
       }
     } catch (err) {
-      setError("Failed to Upload Attendance");
+      setModal({
+        type: "error",
+        header: "Failed",
+        body: "Failed to Upload Attendance",
+      });
       console.error(err);
     }
     setLoading(false);
@@ -224,53 +284,148 @@ const Camera: React.FC = () => {
     });
   }, []);
 
+  const getModalColor = (type: "error" | "info" | "success" | undefined) => {
+    switch (type) {
+      case "info":
+        return {
+          icon: Info,
+          text: "#459ff6",
+          bg: "rgba(34, 37, 39, 0.7)",
+          solidBg: "#07409c",
+        };
+      case "success":
+        return {
+          icon: Check,
+          text: "#5de2b7",
+          bg: "rgba(15, 57, 44, 0.7)",
+          solidBg: "#1da67a",
+        };
+      default:
+        return {
+          icon: CircleX,
+          text: "#ff5656",
+          bg: "rgba(66, 3, 0, 0.7)",
+          solidBg: "#980000",
+        };
+    }
+  };
+
+  const modalProps = getModalColor(modal?.type);
+
   return (
-    <div className="flex flex-col items-center h-full justify-around">
-      <div className="relative w-full h-[70%] flex justify-center rounded-2xl">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="absolute w-full h-full rounded-2xl"
-          style={{ objectFit: "cover" }}
-        />
-        <canvas
-          ref={canvasRef}
-          className="absolute opacity-[0.9] w-full h-full rounded-2xl"
-        />
-      </div>
-      <div className="border-1 border-zinc-500 w-full rounded-xl p-2">
-        <p className="font-medium text-xl">
-          Matched Roll Number:{" "}
-          {bestMatch ? (
-            <span className="text-white">{bestMatch}</span>
+    <>
+      {modal && (
+        <Dialog
+          onHide={() => {
+            if (modal?.type === "success") {
+              setModal(null);
+              navigate("/");
+            }
+            setModal(null);
+          }}
+          header={
+            <div className="flex space-x-2 items-center">
+              <modalProps.icon height={"24px"} />
+              <p>{modal?.header}</p>
+            </div>
+          }
+          draggable={false}
+          dismissableMask={true}
+          visible
+          className="w-full m-5"
+          headerStyle={{
+            background: modalProps.bg,
+            color: modalProps.text,
+            borderLeft: `10px solid ${modalProps.solidBg}`,
+          }}
+          contentStyle={{
+            color: modalProps.text,
+            background: modalProps.bg,
+            borderLeft: `10px solid ${modalProps.solidBg}`,
+          }}
+        >
+          <div>{modal?.body}</div>
+        </Dialog>
+      )}
+      <div className="flex flex-col items-center h-full justify-around">
+        <div className="relative w-full h-[70%] flex justify-center rounded-2xl">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            className="absolute w-full h-full rounded-2xl"
+            style={{ objectFit: "cover" }}
+          />
+          <canvas
+            ref={canvasRef}
+            className="absolute opacity-[0.9] w-full h-full rounded-2xl"
+          />
+        </div>
+        <div className="border-1 border-zinc-500 w-full rounded-xl p-2">
+          <p className="font-medium text-xl">
+            Matched Roll Number:{" "}
+            {bestMatch ? (
+              <span className="text-white">{bestMatch}</span>
+            ) : (
+              <span className="text-white italic animate-pulse">
+                Loading...
+              </span>
+            )}
+          </p>
+        </div>
+        {/* <Dialog
+          onHide={() => {}}
+          modal={false}
+          header={
+            <div className="flex space-x-2 items-center">
+              <modalProps.icon height={"24px"} />
+              <p>Not at Destination</p>
+            </div>
+          }
+          style={{
+            position: "static", // Change from absolute to relative
+            width: "100%", // Allow it to fit the container
+            marginInline: "15px", // Center inside the container
+          }}
+          closable={false}
+          draggable={false}
+          visible={!isInLocation}
+          className="w-full m-5"
+          headerStyle={{
+            background: modalProps.bg,
+            color: modalProps.text,
+            borderLeft: `10px solid ${modalProps.solidBg}`,
+          }}
+          contentStyle={{
+            color: modalProps.text,
+            background: modalProps.bg,
+            borderLeft: `10px solid ${modalProps.solidBg}`,
+          }}
+        >
+          Attendance will not be uploaded as you are not at destination area.
+        </Dialog> */}
+        <div className="h-14 p-1 w-14 relative flex items-center justify-center">
+          {loading ? (
+            <LoaderCircle className="animate-spin h-full w-full absolute" />
           ) : (
-            <span className="text-white italic animate-pulse">Loading...</span>
+            <div
+              onClick={onCapture}
+              className={`mt-4 text-white h-full w-full rounded-full absolute ${
+                !Boolean(bestMatch) ? "opacity-[0.3]" : ""
+              }`}
+            >
+              <img
+                src="shutter-camera.png"
+                style={{
+                  filter: "invert(1.3)",
+                }}
+                alt="shutter camera"
+              />
+            </div>
           )}
-        </p>
+        </div>
       </div>
-      <p className="font-bold text-xl text-red-500">{error}</p>
-      <div className="h-14 p-1 w-14 relative flex items-center justify-center">
-        {loading ? (
-          <LoaderCircle className="animate-spin h-full w-full absolute" />
-        ) : (
-          <div
-            onClick={onCapture}
-            className={`mt-4 text-white h-full w-full rounded-full hover:bg-blue-600 absolute ${
-              !Boolean(bestMatch) ? "opacity-[0.3]" : ""
-            }`}
-          >
-            <img
-              src="shutter-camera.png"
-              style={{
-                filter: "invert(1.3)",
-              }}
-              alt="shutter camera"
-            />
-          </div>
-        )}
-      </div>
-    </div>
+    </>
   );
 };
 
