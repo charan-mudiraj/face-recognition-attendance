@@ -12,9 +12,10 @@ export default defineConfig({
       registerType: "prompt",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
       manifest: {
-        name: "My App",
-        short_name: "MyApp",
-        description: "abc",
+        name: "Face Recognition Attendance",
+        short_name: "FRA",
+        description:
+          "App which captures students faces and matches its descriptor with all the present descriptors to upload the attendance if the student is at the college campus.",
         start_url: "/",
         scope: "/",
         orientation: "portrait",

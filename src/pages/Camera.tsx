@@ -151,7 +151,7 @@ const Camera: React.FC = () => {
   };
 
   const onCapture = async () => {
-    if (isInLocation) {
+    if (!isInLocation) {
       setModal({
         type: "error",
         header: "Invalid Location",
@@ -216,8 +216,8 @@ const Camera: React.FC = () => {
     } catch (err) {
       setModal({
         type: "error",
-        header: "Failed",
-        body: "Failed to Upload Attendance",
+        header: "Error",
+        body: "Failed to Upload Attendance.",
       });
       console.error(err);
     }

@@ -8,6 +8,7 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { Locate, MapPin } from "lucide-react";
+import { icon } from "leaflet";
 
 export default function LocationDetector() {
   const { isInLocation, location } = useLocationDetector();
@@ -121,7 +122,16 @@ export default function LocationDetector() {
               color="green"
             />
 
-            <Marker position={[location.latitude, location.longitude]} />
+            <Marker
+              alt="You"
+              icon={icon({
+                iconUrl: "/location.png",
+                iconSize: [32, 32], // Size of the icon
+                iconAnchor: [16, 32], // Point of the icon that corresponds to the marker's location
+                popupAnchor: [0, -32], // Point from which the popup should open
+              })}
+              position={[location.latitude, location.longitude]}
+            />
             <CustomMapButtons location={location} />
           </MapContainer>
         )}
